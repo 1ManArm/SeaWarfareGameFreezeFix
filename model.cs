@@ -40,10 +40,6 @@ namespace SeaWarfareGame
         public bool FirstHit;
         //Поле координат последнего выстрела
         public string LastShotCoord;
-        //Метод проверки смежных клеток
-        public void CheckAdjacentCells(ref int x, ref int y) { }
-        //Метод исключения уже совершенных попаданий
-        public void AvoidMissedShots(ref int x, ref int y) {  }
 
         //Конструктор. Инициализация полей модели
         public model()
@@ -64,30 +60,38 @@ namespace SeaWarfareGame
             int x, y;
             x = int.Parse(ShotCoord.Substring(0, 1));
             y = int.Parse(ShotCoord.Substring(1));
+
+            if (x < 0 || x >= PlayerShips.GetLength(0) || y < 0 || y >= PlayerShips.GetLength(1))
+            {
+                throw new ArgumentOutOfRangeException("Координаты находятся вне диапазона.");
+            }
+
             if (PlayerShips[x, y] == CoordStatus.None)
                 { result = ShotStatus.Miss; }
             else 
             { 
                 result = ShotStatus.Kill;
-                if ((x != 9 && PlayerShips[x + 1, y] == CoordStatus.Ship) ||
-                    (y != 9 && PlayerShips[x, y + 1] == CoordStatus.Ship) ||
-                    (x != 0 && PlayerShips[x - 1, y] == CoordStatus.Ship) ||
-                    (y != 0 && PlayerShips[x, y - 1] == CoordStatus.Ship)||
-                    (x < 8 && PlayerShips[x + 2, y] == CoordStatus.Ship) ||
-                    (y < 8 && PlayerShips[x, y + 2] == CoordStatus.Ship) ||
-                    (x > 1 && PlayerShips[x - 2, y] == CoordStatus.Ship) ||
-                    (y > 1 && PlayerShips[x, y - 2] == CoordStatus.Ship) ||
-                    (x < 7 && PlayerShips[x + 3, y] == CoordStatus.Ship) ||
-                    (y < 7 && PlayerShips[x, y + 3] == CoordStatus.Ship) ||
-                    (x > 2 && PlayerShips[x - 3, y] == CoordStatus.Ship) ||
-                    (y > 2 && PlayerShips[x, y - 3] == CoordStatus.Ship) /*||*/
-                    //(x < 6 && PlayerShips[x + 4, y] == CoordStatus.Ship) ||
-                    //(y < 6 && PlayerShips[x, y + 4] == CoordStatus.Ship) ||
-                    //(x > 3 && PlayerShips[x - 4, y] == CoordStatus.Ship) ||
-                   /* (y > 3 && PlayerShips[x, y - 4] == CoordStatus.Ship)*/)
+                bool isWounded = (x != 9 && PlayerShips[x + 1, y] == CoordStatus.Ship) ||
+                          (y != 9 && PlayerShips[x, y + 1] == CoordStatus.Ship) ||
+                          (x != 0 && PlayerShips[x - 1, y] == CoordStatus.Ship) ||
+                          (y != 0 && PlayerShips[x, y - 1] == CoordStatus.Ship) ||
+                          (x < 8 && PlayerShips[x + 2, y] == CoordStatus.Ship) ||
+                          (y < 8 && PlayerShips[x, y + 2] == CoordStatus.Ship) ||
+                          (x > 1 && PlayerShips[x - 2, y] == CoordStatus.Ship) ||
+                          (y > 1 && PlayerShips[x, y - 2] == CoordStatus.Ship) ||
+                          (x < 7 && PlayerShips[x + 3, y] == CoordStatus.Ship) ||
+                          (y < 7 && PlayerShips[x, y + 3] == CoordStatus.Ship) ||
+                          (x > 2 && PlayerShips[x - 3, y] == CoordStatus.Ship) ||
+                          (y > 2 && PlayerShips[x, y - 3] == CoordStatus.Ship);
+
+                if (isWounded)
+                {
                     result = ShotStatus.Wounded;
+                }
+
                 PlayerShips[x, y] = CoordStatus.Hit;
                 UndiscoveredCells--;
+
                 if (UndiscoveredCells == 0)
                 {
                     result = ShotStatus.EndBattle;
@@ -97,7 +101,7 @@ namespace SeaWarfareGame
             return result;
         }
 
-        //Генерация выстрела
+        //Генерация выстрела - Ошибка с зависанием была здесь
         public string ShotGen()
         {
             Random rand = new Random();
