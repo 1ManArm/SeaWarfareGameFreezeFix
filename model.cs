@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
+using System.Net.NetworkInformation;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace SeaWarfareGame
 {
@@ -22,10 +26,11 @@ namespace SeaWarfareGame
     {
         Horizontal, Vertical
     }
+
     public class model
     {
         //Массив кораблей игрока
-        public CoordStatus [,] PlayerShips = new CoordStatus[10,10];
+        public CoordStatus [,] PlayerShips = new CoordStatus[10, 10];
         //Массив кораблей противника
         public CoordStatus [,] EnemyShips = new CoordStatus[10, 10];
         
@@ -59,39 +64,27 @@ namespace SeaWarfareGame
             ShotStatus result = ShotStatus.Miss;
             int x, y;
             x = int.Parse(ShotCoord.Substring(0, 1));
-            y = int.Parse(ShotCoord.Substring(1));
-
-            if (x < 0 || x >= PlayerShips.GetLength(0) || y < 0 || y >= PlayerShips.GetLength(1))
-            {
-                throw new ArgumentOutOfRangeException("Координаты находятся вне диапазона.");
-            }
-
+            y = int.Parse(ShotCoord.Substring(1, 1));
             if (PlayerShips[x, y] == CoordStatus.None)
                 { result = ShotStatus.Miss; }
             else 
             { 
                 result = ShotStatus.Kill;
-                bool isWounded = (x != 9 && PlayerShips[x + 1, y] == CoordStatus.Ship) ||
-                          (y != 9 && PlayerShips[x, y + 1] == CoordStatus.Ship) ||
-                          (x != 0 && PlayerShips[x - 1, y] == CoordStatus.Ship) ||
-                          (y != 0 && PlayerShips[x, y - 1] == CoordStatus.Ship) ||
-                          (x < 8 && PlayerShips[x + 2, y] == CoordStatus.Ship) ||
-                          (y < 8 && PlayerShips[x, y + 2] == CoordStatus.Ship) ||
-                          (x > 1 && PlayerShips[x - 2, y] == CoordStatus.Ship) ||
-                          (y > 1 && PlayerShips[x, y - 2] == CoordStatus.Ship) ||
-                          (x < 7 && PlayerShips[x + 3, y] == CoordStatus.Ship) ||
-                          (y < 7 && PlayerShips[x, y + 3] == CoordStatus.Ship) ||
-                          (x > 2 && PlayerShips[x - 3, y] == CoordStatus.Ship) ||
-                          (y > 2 && PlayerShips[x, y - 3] == CoordStatus.Ship);
-
-                if (isWounded)
-                {
-                    result = ShotStatus.Wounded;
-                }
-
+                if ((x != 9 && PlayerShips[x + 1, y] == CoordStatus.Ship) ||
+                    (y != 9 && PlayerShips[x, y + 1] == CoordStatus.Ship) ||
+                    (x != 0 && PlayerShips[x - 1, y] == CoordStatus.Ship) ||
+                    (y != 0 && PlayerShips[x, y - 1] == CoordStatus.Ship)||
+                    (x < 8 && PlayerShips[x + 2, y] == CoordStatus.Ship) ||
+                    (y < 8 && PlayerShips[x, y + 2] == CoordStatus.Ship) ||
+                    (x > 1 && PlayerShips[x - 2, y] == CoordStatus.Ship) ||
+                    (y > 1 && PlayerShips[x, y - 2] == CoordStatus.Ship) ||
+                    (x < 7 && PlayerShips[x + 3, y] == CoordStatus.Ship) ||
+                    (y < 7 && PlayerShips[x, y + 3] == CoordStatus.Ship) ||
+                    (x > 2 && PlayerShips[x - 3, y] == CoordStatus.Ship) ||
+                    (y > 2 && PlayerShips[x, y - 3] == CoordStatus.Ship) )
+                        result = ShotStatus.Wounded;
                 PlayerShips[x, y] = CoordStatus.Hit;
                 UndiscoveredCells--;
-
                 if (UndiscoveredCells == 0)
                 {
                     result = ShotStatus.EndBattle;
@@ -101,7 +94,7 @@ namespace SeaWarfareGame
             return result;
         }
 
-        //Генерация выстрела - Ошибка с зависанием была здесь
+        //Генерация выстрела
         public string ShotGen()
         {
             Random rand = new Random();
@@ -121,5 +114,77 @@ namespace SeaWarfareGame
 
             throw new InvalidOperationException("Нет доступных координат для выстрела.");
         }
+        public bool CheckCoord(string xy, ShipType Type, Direction dir = Direction.Vertical)
+        {
+            bool result = true;
+            return result;
+        }
+        //Добавляет или удаляет корабль
+        // xy - координаты корабля, Type - тип корабля, dir - направление размещения корабля, deleting - удалить или добавить
+        //В случае успешной операции возвращает true
+        public bool AddDelShip(string xy, ShipType Type, Direction dir = Direction.Vertical, bool deleting = false)
+        {
+            bool result = true;
+            if (deleting || CheckCoord(xy, Type, dir))
+            {
+                int x, y;
+                x = int.Parse(xy.Substring(0, 1));
+                y = int.Parse(xy.Substring(1, 1));
+                CoordStatus status = new CoordStatus();
+                if (deleting) status = CoordStatus.None; else status = CoordStatus.Ship;
+
+                PlayerShips[x, y] = status;
+                if (dir == Direction.Vertical)
+                {
+                    switch (Type)
+                    {
+                        case ShipType.x2:
+                            PlayerShips[x, y + 1] = status;
+                            break;
+                        case ShipType.x3:
+                            PlayerShips[x, y + 1] = status;
+                            PlayerShips[x, y + 2] = status;
+                            break;
+                        case ShipType.x4:
+                            PlayerShips[x, y + 1] = status;
+                            PlayerShips[x, y + 2] = status;
+                            PlayerShips[x, y + 3] = status;
+                            break;
+                    }
+
+                }
+                else
+                {
+                    switch (Type)
+                    {
+                        case ShipType.x2:
+                            PlayerShips[x + 1, y] = status;
+                            break;
+                        case ShipType.x3:
+                            PlayerShips[x + 1, y] = status;
+                            PlayerShips[x + 2, y] = status;
+                            break;
+                        case ShipType.x4:
+                            PlayerShips[x + 1, y] = status;
+                            PlayerShips[x + 2, y] = status;
+                            PlayerShips[x + 3, y] = status;
+                            break;
+                    }
+                }
+
+            }
+            else result = false;
+            return result;
+        }
+        public void DelShips()
+        {
+            for (int i = 0; i < 10; i++)
+                for (int j = 0; j < 10; j++)
+                {
+                    PlayerShips[i, j] = CoordStatus.None;
+                }
+        }
+
+
     }
 }
